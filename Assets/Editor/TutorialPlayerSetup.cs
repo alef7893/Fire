@@ -63,6 +63,7 @@ public static class TutorialPlayerSetup
 
         EnsureTerrainCollider();
         EnsureBoundaryWalls();
+        EnsureSingleAudioListener(playerObject);
         PositionPlayerAtTerrainStart(playerObject.transform);
 
         EditorUtility.SetDirty(playerObject);
@@ -162,5 +163,29 @@ public static class TutorialPlayerSetup
 
         BoxCollider collider = wall.AddComponent<BoxCollider>();
         collider.size = size;
+    }
+
+    private static void EnsureSingleAudioListener(GameObject playerObject)
+    {
+        AudioListener playerListener = playerObject.GetComponent<AudioListener>();
+        if (playerListener == null)
+        {
+            playerListener = playerObject.AddComponent<AudioListener>();
+        }
+
+        playerListener.enabled = true;
+        AudioListener[] listeners = Object.FindObjectsOfType<AudioListener>(true);
+        foreach (AudioListener listener in listeners)
+        {
+            if (listener == null || listener == playerListener)
+            {
+                continue;
+            }
+
+            listener.enabled = false;
+            EditorUtility.SetDirty(listener);
+        }
+
+        EditorUtility.SetDirty(playerListener);
     }
 }

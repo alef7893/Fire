@@ -1,16 +1,16 @@
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
-using System.IO;
+using UnityEngine;
 
 public class FireGraphBuilder : EditorWindow
 {
-    private float connectionThreshold = 10.0f;
+    private static bool drawSceneEdges = true;
+    private bool includeInactiveNodes = true;
 
-    [MenuItem("Tools/Build Fire Graph")]
+    [MenuItem("Tools/Fire Simulation/Validate Runtime Fire Graph")]
     public static void ShowWindow()
     {
-        GetWindow<FireGraphBuilder>("Fire Graph Builder");
+        GetWindow<FireGraphBuilder>("Fire Graph");
         SceneView.duringSceneGui -= OnSceneGUIStatic;
         SceneView.duringSceneGui += OnSceneGUIStatic;
     }
@@ -22,15 +22,15 @@ public class FireGraphBuilder : EditorWindow
 
     private void OnGUI()
     {
-        connectionThreshold = EditorGUILayout.FloatField("Max Connection Distance", connectionThreshold);
+        includeInactiveNodes = EditorGUILayout.Toggle("Include Inactive Nodes", includeInactiveNodes);
+        drawSceneEdges = EditorGUILayout.Toggle("Show Scene Edges", drawSceneEdges);
 
-        if (GUILayout.Button("Generate Fire Graph"))
+        if (GUILayout.Button("Validate Graph"))
         {
-            GenerateGraph();
-            SceneView.RepaintAll(); // Immediately reflect changes
+            ValidateGraph(includeInactiveNodes);
         }
 
-        if (GUILayout.Button("Refresh Visualization"))
+        if (GUILayout.Button("Refresh Scene View"))
         {
             SceneView.RepaintAll();
         }
@@ -38,69 +38,58 @@ public class FireGraphBuilder : EditorWindow
 
     private static void OnSceneGUIStatic(SceneView view)
     {
-        TextAsset json = Resources.Load<TextAsset>("fire_graph");
-        if (json == null) return;
-
-        FireGraph graph = JsonUtility.FromJson<FireGraph>(json.text);
-        if (graph == null || graph.nodes == null)
+        if (!drawSceneEdges)
         {
             return;
         }
 
-        Dictionary<string, FireGraphNode> node_lookup = new Dictionary<string, FireGraphNode>();
-
-        foreach (var node in graph.nodes)
+        FireEdge[] fireEdges = Object.FindObjectsOfType<FireEdge>(true);
+        foreach (FireEdge edge in fireEdges)
         {
-            node_lookup[node.id] = node;
-        }
-
-        Handles.color = Color.yellow;
-
-        foreach (var node in graph.nodes)
-        {
-            Handles.SphereHandleCap(0, node.position, Quaternion.identity, 0.3f, EventType.Repaint);
-            foreach (var edge in node.edges)
+            if (edge == null || !edge.showGizmo || !edge.IsValid())
             {
-                if (node_lookup.TryGetValue(edge.targetId, out FireGraphNode n_node))
-                {
-                    Handles.DrawLine(node.position, n_node.position);
-                }
+                continue;
             }
+
+            Handles.color = edge.edgeColor;
+            Handles.DrawLine(edge.source.transform.position, edge.target.transform.position);
         }
     }
 
-    void GenerateGraph()
+    private static void ValidateGraph(bool includeInactive)
     {
-        FireObject[] fire_objects = GameObject.FindObjectsOfType<FireObject>();
-        FireGraph graph = new FireGraph();
+        FireObject[] fireObjects = Object.FindObjectsOfType<FireObject>(includeInactive);
+        FireEdge[] fireEdges = Object.FindObjectsOfType<FireEdge>(includeInactive);
+        HashSet<string> ids = new HashSet<string>();
+        int explicitEdgeCount = 0;
+        int invalidEdgeCount = 0;
+        int duplicatedIds = 0;
 
-        foreach (FireObject fireobject in fire_objects)
+        foreach (FireEdge edge in fireEdges)
         {
-            FireGraphNode node = new FireGraphNode(fireobject.gameObject.name, fireobject.transform.position);
-            graph.nodes.Add(node);
-        }
-
-        foreach (var a in graph.nodes)
-        {
-            foreach (var b in graph.nodes)
+            if (edge != null && edge.IsValid())
             {
-                if (a == b) continue;
-
-                float dist = Vector3.Distance(a.position, b.position);
-                if (dist <= connectionThreshold)
-                {
-                    a.edges.Add(new FireGraphEdge(b.id, dist));
-                }
+                explicitEdgeCount++;
+            }
+            else
+            {
+                invalidEdgeCount++;
+                Debug.LogWarning($"Invalid fire edge: {edge?.gameObject.name}", edge);
             }
         }
 
-        string json = JsonUtility.ToJson(graph, true);
-        string resourcesPath = Path.Combine(Application.dataPath, "Resources");
-        Directory.CreateDirectory(resourcesPath);
+        foreach (FireObject fireObject in fireObjects)
+        {
+            FireGraphIdentity identity = fireObject.GetComponent<FireGraphIdentity>();
+            string id = identity != null ? identity.GetId() : fireObject.gameObject.name;
+            if (!ids.Add(id))
+            {
+                duplicatedIds++;
+                Debug.LogWarning($"Duplicated fire node id: {id}", fireObject);
+            }
 
-        string path = Path.Combine(resourcesPath, "fire_graph.json");
-        File.WriteAllText(path, json);
-        AssetDatabase.Refresh();
-        Debug.Log("Fire graph has been saved to /Resources/fire_graph.json!");
+        }
+
+        Debug.Log($"Runtime fire graph validation: {fireObjects.Length} nodes, {explicitEdgeCount} explicit edges, {invalidEdgeCount} invalid edges, {duplicatedIds} duplicated ids.");
     }
 }

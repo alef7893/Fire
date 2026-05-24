@@ -4,7 +4,6 @@ public enum FireNodeType
 {
     Structure,
     Vegetation,
-    NonFlammable,
     Spark
 }
 
@@ -31,7 +30,7 @@ public class FireObject : MonoBehaviour
     public bool canBeDestroyed = true;
     public bool isCritical = false;
 
-    [Header("Visual Effects")]
+    [Header("Legacy Node Visual Effects")]
     public GameObject burningEffectPrefab;
     public Vector3 burningEffectLocalOffset = Vector3.zero;
     public Vector3 burningEffectLocalScale = Vector3.one;
@@ -74,11 +73,6 @@ public class FireObject : MonoBehaviour
     {
         SyncLegacyFlags();
         SetVisualState();
-
-        if (state == FireNodeState.Burning)
-        {
-            StartBurningEffect();
-        }
     }
 
     void Update()
@@ -88,7 +82,7 @@ public class FireObject : MonoBehaviour
 
     public bool CanIgnite()
     {
-        return state == FireNodeState.Off && nodeType != FireNodeType.NonFlammable;
+        return state == FireNodeState.Off;
     }
 
     public bool IsBurning()
@@ -145,7 +139,6 @@ public class FireObject : MonoBehaviour
         vegetationBlinkUsesLitMaterial = true;
         SyncLegacyFlags();
         SetVisualState();
-        StartBurningEffect();
         Debug.Log($"{gameObject.name} has ignited!");
 
         if (nodeType == FireNodeType.Vegetation || isCritical)
@@ -218,7 +211,7 @@ public class FireObject : MonoBehaviour
 
     private bool ShouldDestroy(float progress)
     {
-        if (!canBeDestroyed || nodeType == FireNodeType.NonFlammable)
+        if (!canBeDestroyed)
         {
             return false;
         }

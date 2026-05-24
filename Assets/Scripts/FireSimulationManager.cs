@@ -4,24 +4,33 @@ using UnityEngine;
 
 public class FireSimulationManager : MonoBehaviour
 {
-    public string fireGraphFileName = "fire_graph";
-    public string startingNodeId;
+    [Header("Start")]
+    public FireObject startingNode;
+    public bool igniteStartingNodeOnStart = true;
+
+    [Header("Graph")]
+    public FireGraphRoot graphRoot;
+    public bool treatConnectionsAsBidirectional = true;
+    public bool includeInactiveNodes = true;
 
     [Header("Propagation")]
     public float spreadInterval = 1.0f;
     public float minimumEdgeDistance = 0.1f;
     public float propagationMultiplier = 5.0f;
-    public bool igniteStartingNodeOnStart = true;
 
-    private Dictionary<string, FireObject> fireObjects = new Dictionary<string, FireObject>();
-    private Dictionary<string, FireGraphNode> fireGraph = new Dictionary<string, FireGraphNode>();
-    private List<FireObject> allNodes = new List<FireObject>();
-    private List<FireObject> burningNodes = new List<FireObject>();
+    private readonly List<FireObject> allNodes = new List<FireObject>();
+    private readonly List<FireObject> burningNodes = new List<FireObject>();
+    private readonly Dictionary<FireObject, List<RuntimeFireEdge>> graph = new Dictionary<FireObject, List<RuntimeFireEdge>>();
 
-    void Start()
+    private class RuntimeFireEdge
     {
-        LoadFireGraph();
-        CacheFireObjects();
+        public FireEdge edge;
+        public FireObject target;
+    }
+
+    private void Start()
+    {
+        BuildGraphFromScene();
 
         if (igniteStartingNodeOnStart)
         {
@@ -29,6 +38,11 @@ public class FireSimulationManager : MonoBehaviour
         }
 
         StartCoroutine(SpreadLoop());
+    }
+
+    public void RebuildGraph()
+    {
+        BuildGraphFromScene();
     }
 
     public void RegisterBurningNode(FireObject node)
@@ -51,9 +65,90 @@ public class FireSimulationManager : MonoBehaviour
         burningNodes.Remove(node);
     }
 
+    private void BuildGraphFromScene()
+    {
+        graph.Clear();
+        allNodes.Clear();
+        burningNodes.Clear();
+
+        if (graphRoot == null)
+        {
+            graphRoot = GetComponent<FireGraphRoot>();
+        }
+
+        FireObject[] sceneNodes = graphRoot != null
+            ? graphRoot.GetNodes(includeInactiveNodes)
+            : FindObjectsOfType<FireObject>(includeInactiveNodes);
+
+        foreach (FireObject node in sceneNodes)
+        {
+            if (node == null)
+            {
+                continue;
+            }
+
+            allNodes.Add(node);
+            graph[node] = new List<RuntimeFireEdge>();
+
+            if (node.IsBurning())
+            {
+                RegisterBurningNode(node);
+            }
+        }
+
+        FireEdge[] explicitEdges = graphRoot != null
+            ? graphRoot.GetEdges(includeInactiveNodes)
+            : FindObjectsOfType<FireEdge>(includeInactiveNodes);
+
+        foreach (FireEdge edge in explicitEdges)
+        {
+            if (edge == null || !edge.IsValid())
+            {
+                continue;
+            }
+
+            edge.AssignSimulationManager(this);
+            AddEdge(edge.source, edge.target, edge);
+
+            if (treatConnectionsAsBidirectional)
+            {
+                AddEdge(edge.target, edge.source, edge);
+            }
+        }
+
+        Debug.Log($"Runtime fire graph built with {allNodes.Count} nodes and {CountEdges()} directed edges.");
+    }
+
+    private void AddEdge(FireObject source, FireObject target, FireEdge edgeComponent)
+    {
+        if (source == null || target == null || source == target)
+        {
+            return;
+        }
+
+        if (!graph.ContainsKey(source))
+        {
+            graph[source] = new List<RuntimeFireEdge>();
+        }
+
+        foreach (RuntimeFireEdge existingEdge in graph[source])
+        {
+            if (existingEdge.target == target)
+            {
+                return;
+            }
+        }
+
+        graph[source].Add(new RuntimeFireEdge
+        {
+            edge = edgeComponent,
+            target = target
+        });
+    }
+
     private IEnumerator SpreadLoop()
     {
-        WaitForSeconds wait = new WaitForSeconds(spreadInterval);
+        WaitForSeconds wait = new WaitForSeconds(Mathf.Max(0.01f, spreadInterval));
 
         while (true)
         {
@@ -98,33 +193,20 @@ public class FireSimulationManager : MonoBehaviour
 
     private void PropagateFrom(FireObject source, float deltaTime)
     {
-        string sourceId = source.gameObject.name;
-        if (!fireGraph.ContainsKey(sourceId))
+        if (!graph.TryGetValue(source, out List<RuntimeFireEdge> edges))
         {
             return;
         }
 
-        FireGraphNode graphNode = fireGraph[sourceId];
-        foreach (FireGraphEdge edge in graphNode.edges)
+        foreach (RuntimeFireEdge edge in edges)
         {
-            FireObject target;
-            if (!fireObjects.TryGetValue(edge.targetId, out target))
+            FireObject target = edge.target;
+            if (target == null || !target.CanIgnite())
             {
                 continue;
             }
 
-            if (!target.CanIgnite())
-            {
-                continue;
-            }
-
-            float distance = Mathf.Max(edge.distance, minimumEdgeDistance);
-            float exposure = source.firePower * source.fireIntensity * propagationMultiplier * deltaTime / distance;
-            bool ignited = target.AddExposure(exposure);
-            if (ignited)
-            {
-                RegisterBurningNode(target);
-            }
+            edge.edge?.TryStartPropagation(source, this);
         }
     }
 
@@ -141,62 +223,24 @@ public class FireSimulationManager : MonoBehaviour
 
     private void IgniteStartingNode()
     {
-        if (string.IsNullOrEmpty(startingNodeId))
+        if (startingNode == null)
         {
-            Debug.LogWarning("No startingNodeId configured for the fire simulation.");
+            Debug.LogWarning("No starting fire node has been assigned.");
             return;
         }
 
-        FireObject start;
-        if (!fireObjects.TryGetValue(startingNodeId, out start))
-        {
-            Debug.LogWarning($"Starting node '{startingNodeId}' was not found in the scene.");
-            return;
-        }
-
-        start.Ignite();
-        RegisterBurningNode(start);
+        startingNode.Ignite();
+        RegisterBurningNode(startingNode);
     }
 
-    private void LoadFireGraph()
+    private int CountEdges()
     {
-        TextAsset jsonFile = Resources.Load<TextAsset>(fireGraphFileName);
-        if (jsonFile == null)
+        int count = 0;
+        foreach (List<RuntimeFireEdge> edges in graph.Values)
         {
-            Debug.LogError($"Could not find {fireGraphFileName}.json in a Resources folder.");
-            return;
+            count += edges.Count;
         }
 
-        FireGraph graph = JsonUtility.FromJson<FireGraph>(jsonFile.text);
-        if (graph == null || graph.nodes == null)
-        {
-            Debug.LogError($"Could not parse fire graph from {fireGraphFileName}.json.");
-            return;
-        }
-
-        fireGraph.Clear();
-        foreach (FireGraphNode node in graph.nodes)
-        {
-            fireGraph[node.id] = node;
-        }
-    }
-
-    private void CacheFireObjects()
-    {
-        fireObjects.Clear();
-        allNodes.Clear();
-        burningNodes.Clear();
-
-        FireObject[] fireObjectsInScene = GameObject.FindObjectsOfType<FireObject>();
-        foreach (FireObject fireObject in fireObjectsInScene)
-        {
-            fireObjects[fireObject.gameObject.name] = fireObject;
-            allNodes.Add(fireObject);
-
-            if (fireObject.IsBurning())
-            {
-                RegisterBurningNode(fireObject);
-            }
-        }
+        return count;
     }
 }

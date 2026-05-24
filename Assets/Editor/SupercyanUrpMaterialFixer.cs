@@ -3,15 +3,8 @@ using UnityEngine;
 
 public static class SupercyanUrpMaterialFixer
 {
-    private const string ForestPackageRoot = "Assets/ImportedPackages/Supercyan Free Forest Sample";
     private const string ItemPackRoot = "Assets/ImportedPackages/Supercyan";
     private const string UrpLitShaderName = "Universal Render Pipeline/Lit";
-
-    [MenuItem("Tools/Supercyan/Convert Forest Materials To URP")]
-    public static void ConvertForestMaterialsToUrp()
-    {
-        ConvertMaterialsToUrp(ForestPackageRoot, skipSkybox: true, "Supercyan forest");
-    }
 
     [MenuItem("Tools/Supercyan/Convert Item Pack Materials To URP")]
     public static void ConvertItemPackMaterialsToUrp()
