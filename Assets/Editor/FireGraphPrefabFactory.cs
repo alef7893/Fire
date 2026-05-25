@@ -89,20 +89,17 @@ public static class FireGraphPrefabFactory
         edge.spreadDelay = 0.0f;
         edge.propagationCostMultiplier = 2.0f;
         edge.propagationSpeed = 1.0f;
-        edge.frontFireEffectPrefab = groundFireEffectPrefab;
         edge.groundFirePatchPrefab = groundFireEffectPrefab;
         edge.nodeArrivalEffectPrefab = nodeArrivalEffectPrefab;
-        edge.fireEffectLocalOffset = new Vector3(0.0f, 0.25f, 0.0f);
-        edge.fireEffectLocalScale = Vector3.one * 0.7f;
+        edge.fireEffectLocalOffset = Vector3.zero;
         edge.firePatchLocalScale = Vector3.one * 0.6f;
         edge.nodeArrivalEffectLocalScale = Vector3.one * 0.35f;
         edge.alignEffectToEdge = true;
         edge.muteFirePatchAudio = true;
-        edge.firePatchSpacing = 0.85f;
+        edge.firePatchSpacing = 0.6f;
         edge.firePatchLifetime = 18.0f;
         ApplyDynamicFireScaleDefaults(edge);
         edge.nodeArrivalEffectLifetime = 2.0f;
-        edge.effectDestroyDelay = 2.0f;
         edge.showGizmo = true;
         edge.edgeColor = new Color(1.0f, 0.55f, 0.05f, 0.9f);
         edge.midpointSize = 0.12f;
@@ -141,8 +138,11 @@ public static class FireGraphPrefabFactory
     private static void ApplyDynamicFireScaleDefaults(FireEdge edge)
     {
         edge.useDynamicPatchScale = true;
-        edge.firePatchInitialScaleFactor = 0.1f;
         edge.firePatchEdgeScaleFactor = 0.65f;
+        edge.firePatchMinimumScale = 0.0f;
+        edge.firePatchMaximumScale = 1.5f;
+        edge.firePatchResizeSpeed = 1.0f;
+        edge.scaleGrowthByPropagationCost = true;
         edge.firePatchGrowDuration = 3.0f;
         edge.firePatchFadeDuration = 3.0f;
         edge.firePatchGrowthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);

@@ -96,7 +96,6 @@ Representa una arista de propagacion sobre suelo plano.
 Usa:
 
 ```text
-frontFireEffectPrefab: VFX_Fire_01_Big_Simple
 groundFirePatchPrefab: VFX_Fire_01_Big_Simple
 nodeArrivalEffectPrefab: VFX_Fire_01_Small_Simple
 ```
@@ -107,15 +106,17 @@ Parametros actuales:
 propagationSpeed: 1.0
 propagationCostMultiplier: 2.0
 fireEffectLocalOffset: (0, 0, 0)
-fireEffectLocalScale: (0.7, 0.7, 0.7)
 firePatchLocalScale: (0.6, 0.6, 0.6)
 firePatchSpacing: 0.6
 firePatchLifetime: 18.0
 nodeArrivalEffectLifetime: 2.0
 muteFirePatchAudio: true
 useDynamicPatchScale: true
-firePatchInitialScaleFactor: 0.1
 firePatchEdgeScaleFactor: 0.65
+firePatchMinimumScale: 0.0
+firePatchMaximumScale: 1.5
+firePatchResizeSpeed: 1.0
+scaleGrowthByPropagationCost: true
 firePatchGrowDuration: 3.0
 firePatchFadeDuration: 3.0
 ```
@@ -287,17 +288,16 @@ Luego el manager agrega la conexion `source -> target`. Si el grafo es bidirecci
 
 ## Propagacion Visual
 
-La arista usa dos capas visuales:
+La arista usa patches de fuego sobre el suelo:
 
 ```text
-Front Fire Effect
 Ground Fire Patches
 ```
 
-El frente de fuego se mueve con:
+La posicion de cada patch se calcula con:
 
 ```text
-position = Lerp(activeSource.position, activeTarget.position, progress)
+position = Lerp(activeSource.position, activeTarget.position, normalizedDistance)
 ```
 
 El progreso avanza con:
@@ -317,7 +317,7 @@ while nextPatchDistance <= burnedDistance:
     nextPatchDistance += firePatchSpacing
 ```
 
-Esto permite que el fuego no solo se mueva, sino que deje una zona encendida detras del frente.
+Esto permite que el fuego no aparezca de golpe en toda la arista, sino que deje una zona encendida detras de la propagacion.
 
 ## Patches De Fuego
 
@@ -340,8 +340,11 @@ El sistema ya tiene parametros para variar la escala de cada patch:
 
 ```text
 useDynamicPatchScale
-firePatchInitialScaleFactor
 firePatchEdgeScaleFactor
+firePatchMinimumScale
+firePatchMaximumScale
+firePatchResizeSpeed
+scaleGrowthByPropagationCost
 firePatchGrowDuration
 firePatchFadeDuration
 firePatchGrowthCurve

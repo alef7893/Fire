@@ -29,11 +29,9 @@ public class FireEdge : MonoBehaviour
     [Range(0.0f, 1.0f)] public float progress = 0.0f;
 
     [Header("Ground Fire Effect")]
-    public GameObject frontFireEffectPrefab;
     public GameObject groundFirePatchPrefab;
     public GameObject nodeArrivalEffectPrefab;
     public Vector3 fireEffectLocalOffset = new Vector3(0.0f, 0.25f, 0.0f);
-    public Vector3 fireEffectLocalScale = Vector3.one;
     public Vector3 firePatchLocalScale = Vector3.one;
     public Vector3 nodeArrivalEffectLocalScale = Vector3.one;
     public bool alignEffectToEdge = true;
@@ -41,12 +39,14 @@ public class FireEdge : MonoBehaviour
     public float firePatchSpacing = 1.0f;
     public float firePatchLifetime = 18.0f;
     public float nodeArrivalEffectLifetime = 2.0f;
-    public float effectDestroyDelay = 2.0f;
 
     [Header("Dynamic Patch Scale")]
     public bool useDynamicPatchScale = false;
-    [Range(0.0f, 1.0f)] public float firePatchInitialScaleFactor = 0.1f;
     [Range(0.0f, 1.0f)] public float firePatchEdgeScaleFactor = 0.65f;
+    public float firePatchMinimumScale = 0.0f;
+    public float firePatchMaximumScale = 1.5f;
+    public float firePatchResizeSpeed = 1.0f;
+    public bool scaleGrowthByPropagationCost = true;
     public float firePatchGrowDuration = 3.0f;
     public float firePatchFadeDuration = 3.0f;
     public AnimationCurve firePatchGrowthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
@@ -60,7 +60,6 @@ public class FireEdge : MonoBehaviour
     private FireNode activeSource;
     private FireNode activeTarget;
     private FireSimulationManager simulationManager;
-    private GameObject activeFrontFireEffect;
     private readonly System.Collections.Generic.List<GameObject> activeFirePatches = new System.Collections.Generic.List<GameObject>();
     private float delayTimer;
     private float nextPatchDistance;
@@ -102,7 +101,6 @@ public class FireEdge : MonoBehaviour
         progress = 0.0f;
         delayTimer = Mathf.Max(0.0f, spreadDelay);
         nextPatchDistance = 0.0f;
-        CreateFrontFireEffect();
         UpdateFireVisuals();
         return true;
     }
@@ -158,17 +156,6 @@ public class FireEdge : MonoBehaviour
         }
     }
 
-    private void CreateFrontFireEffect()
-    {
-        if (frontFireEffectPrefab == null || activeFrontFireEffect != null)
-        {
-            return;
-        }
-
-        activeFrontFireEffect = Instantiate(frontFireEffectPrefab, transform);
-        activeFrontFireEffect.transform.localScale = fireEffectLocalScale;
-    }
-
     private void UpdateFireVisuals()
     {
         if (activeSource == null || activeTarget == null)
@@ -178,29 +165,7 @@ public class FireEdge : MonoBehaviour
 
         Vector3 start = activeSource.transform.position;
         Vector3 end = activeTarget.transform.position;
-        UpdateFrontFireEffect(start, end);
         SpawnFirePatches(start, end);
-    }
-
-    private void UpdateFrontFireEffect(Vector3 start, Vector3 end)
-    {
-        if (activeFrontFireEffect == null)
-        {
-            return;
-        }
-
-        Vector3 position = Vector3.Lerp(start, end, progress) + fireEffectLocalOffset;
-        activeFrontFireEffect.transform.position = position;
-
-        if (alignEffectToEdge)
-        {
-            Vector3 direction = end - start;
-            direction.y = 0.0f;
-            if (direction.sqrMagnitude > 0.0001f)
-            {
-                activeFrontFireEffect.transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            }
-        }
     }
 
     private void SpawnFirePatches(Vector3 start, Vector3 end)
@@ -229,9 +194,22 @@ public class FireEdge : MonoBehaviour
     private void CreateFirePatch(Vector3 start, Vector3 end, float normalizedDistance)
     {
         Vector3 position = Vector3.Lerp(start, end, normalizedDistance) + fireEffectLocalOffset;
-        GameObject patch = Instantiate(groundFirePatchPrefab, position, Quaternion.identity, transform);
-        Vector3 peakScale = GetPatchPeakScale(normalizedDistance);
-        patch.transform.localScale = useDynamicPatchScale ? peakScale * Mathf.Max(0.0f, firePatchInitialScaleFactor) : peakScale;
+        GameObject patchRoot = new GameObject($"FirePatch_{activeFirePatches.Count:00}");
+        patchRoot.transform.SetParent(transform);
+        patchRoot.transform.position = position;
+
+        GameObject patch = Instantiate(groundFirePatchPrefab, patchRoot.transform);
+        patch.transform.localPosition = Vector3.zero;
+        patch.transform.localRotation = Quaternion.identity;
+        patch.transform.localScale = firePatchLocalScale;
+
+        float positionScaleFactor = GetPatchPositionScaleFactor(normalizedDistance);
+        float minimumScale = useDynamicPatchScale ? Mathf.Max(0.0f, firePatchMinimumScale) : positionScaleFactor;
+        float maximumScale = useDynamicPatchScale
+            ? Mathf.Max(minimumScale, firePatchMaximumScale * positionScaleFactor)
+            : positionScaleFactor;
+
+        patchRoot.transform.localScale = Vector3.one * minimumScale;
         if (muteFirePatchAudio)
         {
             MuteAudioSources(patch);
@@ -243,87 +221,89 @@ public class FireEdge : MonoBehaviour
             direction.y = 0.0f;
             if (direction.sqrMagnitude > 0.0001f)
             {
-                patch.transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+                patchRoot.transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             }
         }
 
-        activeFirePatches.Add(patch);
+        activeFirePatches.Add(patchRoot);
         if (useDynamicPatchScale)
         {
-            StartCoroutine(AnimateFirePatchScale(patch, peakScale));
+            StartCoroutine(AnimateFirePatchScale(patchRoot, minimumScale, maximumScale));
         }
         else if (firePatchLifetime > 0.0f)
         {
-            Destroy(patch, firePatchLifetime);
+            Destroy(patchRoot, firePatchLifetime);
         }
     }
 
-    private Vector3 GetPatchPeakScale(float normalizedDistance)
+    private float GetPatchPositionScaleFactor(float normalizedDistance)
     {
         float edgeScaleFactor = Mathf.Clamp01(firePatchEdgeScaleFactor);
         float centerFactor = 1.0f - Mathf.Abs(Mathf.Clamp01(normalizedDistance) - 0.5f) * 2.0f;
-        float scaleFactor = Mathf.Lerp(edgeScaleFactor, 1.0f, centerFactor);
-        return firePatchLocalScale * scaleFactor;
+        return Mathf.Lerp(edgeScaleFactor, 1.0f, centerFactor);
     }
 
-    private System.Collections.IEnumerator AnimateFirePatchScale(GameObject patch, Vector3 peakScale)
+    private System.Collections.IEnumerator AnimateFirePatchScale(GameObject patchRoot, float minimumScale, float maximumScale)
     {
-        if (patch == null)
+        if (patchRoot == null)
         {
             yield break;
         }
 
-        Vector3 initialScale = peakScale * Mathf.Max(0.0f, firePatchInitialScaleFactor);
-        float growDuration = Mathf.Max(0.0f, firePatchGrowDuration);
+        float propagationCost = scaleGrowthByPropagationCost ? Mathf.Max(0.01f, propagationCostMultiplier) : 1.0f;
+        float resizeSpeed = Mathf.Max(0.01f, firePatchResizeSpeed);
+        float growDuration = Mathf.Max(0.0f, firePatchGrowDuration * propagationCost / resizeSpeed);
         if (growDuration > 0.0f)
         {
             float elapsed = 0.0f;
-            while (elapsed < growDuration && patch != null)
+            while (elapsed < growDuration && patchRoot != null)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / growDuration);
                 float curvedT = firePatchGrowthCurve != null ? firePatchGrowthCurve.Evaluate(t) : t;
-                patch.transform.localScale = Vector3.LerpUnclamped(initialScale, peakScale, curvedT);
+                float scale = Mathf.LerpUnclamped(minimumScale, maximumScale, curvedT);
+                patchRoot.transform.localScale = Vector3.one * Mathf.Max(0.0f, scale);
                 yield return null;
             }
         }
 
-        if (patch == null)
+        if (patchRoot == null)
         {
             yield break;
         }
 
-        patch.transform.localScale = peakScale;
+        patchRoot.transform.localScale = Vector3.one * maximumScale;
 
-        float stableDuration = Mathf.Max(0.0f, firePatchLifetime - growDuration - Mathf.Max(0.0f, firePatchFadeDuration));
+        float fadeDuration = Mathf.Max(0.0f, firePatchFadeDuration / resizeSpeed);
+        float stableDuration = Mathf.Max(0.0f, firePatchLifetime - growDuration - fadeDuration);
         if (stableDuration > 0.0f)
         {
             yield return new WaitForSeconds(stableDuration);
         }
 
-        if (patch == null)
+        if (patchRoot == null)
         {
             yield break;
         }
 
-        float fadeDuration = Mathf.Max(0.0f, firePatchFadeDuration);
         if (fadeDuration > 0.0f)
         {
             float elapsed = 0.0f;
-            Vector3 fadeStartScale = patch.transform.localScale;
-            while (elapsed < fadeDuration && patch != null)
+            float fadeStartScale = patchRoot.transform.localScale.x;
+            while (elapsed < fadeDuration && patchRoot != null)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / fadeDuration);
                 float scaleFactor = firePatchFadeCurve != null ? firePatchFadeCurve.Evaluate(t) : 1.0f - t;
-                patch.transform.localScale = fadeStartScale * Mathf.Max(0.0f, scaleFactor);
+                float scale = Mathf.LerpUnclamped(minimumScale, fadeStartScale, Mathf.Max(0.0f, scaleFactor));
+                patchRoot.transform.localScale = Vector3.one * Mathf.Max(0.0f, scale);
                 yield return null;
             }
         }
 
-        if (patch != null)
+        if (patchRoot != null)
         {
-            Destroy(patch);
+            Destroy(patchRoot);
         }
     }
 
@@ -349,8 +329,6 @@ public class FireEdge : MonoBehaviour
             activeTarget.Ignite();
             simulationManager?.RegisterBurningNode(activeTarget);
         }
-
-        StopFrontFireEffect();
     }
 
     private void CreateNodeArrivalEffect(Vector3 nodePosition)
@@ -367,28 +345,6 @@ public class FireEdge : MonoBehaviour
         {
             Destroy(arrivalEffect, nodeArrivalEffectLifetime);
         }
-    }
-
-    private void StopFrontFireEffect()
-    {
-        if (activeFrontFireEffect == null)
-        {
-            return;
-        }
-
-        ParticleSystem[] particleSystems = activeFrontFireEffect.GetComponentsInChildren<ParticleSystem>();
-        foreach (ParticleSystem particleSystem in particleSystems)
-        {
-            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        }
-
-        Destroy(activeFrontFireEffect, effectDestroyDelay);
-        activeFrontFireEffect = null;
-    }
-
-    private void OnDisable()
-    {
-        StopFrontFireEffect();
     }
 
     private void OnDrawGizmos()
