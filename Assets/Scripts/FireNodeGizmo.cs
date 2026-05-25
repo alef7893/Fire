@@ -22,21 +22,16 @@ public class FireNodeGizmo : MonoBehaviour
             return;
         }
 
-        FireObject fireObject = GetComponent<FireObject>();
-        Color stateColor = GetStateColor(fireObject);
+        FireNode fireNode = GetComponent<FireNode>();
+        Color stateColor = GetStateColor(fireNode);
         float safeRadius = Mathf.Max(0.01f, radius);
         float safeCenterSize = Mathf.Max(0.01f, centerSize);
 
         Gizmos.color = stateColor;
-        Gizmos.DrawWireSphere(transform.position, safeRadius);
+        Gizmos.DrawSphere(transform.position, safeRadius);
         Gizmos.DrawSphere(transform.position, safeCenterSize);
 
 #if UNITY_EDITOR
-        Handles.color = stateColor;
-        Handles.DrawWireDisc(transform.position, Vector3.up, safeRadius);
-        Handles.DrawWireDisc(transform.position, Vector3.right, safeRadius);
-        Handles.DrawWireDisc(transform.position, Vector3.forward, safeRadius);
-
         if (showLabel)
         {
             Handles.Label(transform.position + Vector3.up * (safeRadius + 0.15f), gameObject.name);
@@ -44,19 +39,19 @@ public class FireNodeGizmo : MonoBehaviour
 #endif
     }
 
-    private Color GetStateColor(FireObject fireObject)
+    private Color GetStateColor(FireNode fireNode)
     {
-        if (fireObject == null)
+        if (fireNode == null)
         {
             return offColor;
         }
 
-        if (fireObject.IsBurning())
+        if (fireNode.IsBurning())
         {
             return burningColor;
         }
 
-        if (fireObject.IsDestroyed())
+        if (fireNode.IsDestroyed())
         {
             return destroyedColor;
         }

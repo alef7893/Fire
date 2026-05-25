@@ -51,13 +51,11 @@ public static class FirePropagationTestSceneBuilder
         root.nodesRoot = nodesRoot.transform;
         root.edgesRoot = edgesRoot.transform;
 
-        FireObject spark = CreateNode(nodesRoot.transform, "Spark_Start", SparkPrefabPath, new Vector3(0.0f, 0.25f, -5.0f));
-        FireObject nodeA = CreateNode(nodesRoot.transform, "Node_A_Left", SensitivePrefabPath, new Vector3(-3.5f, 0.25f, -2.0f));
-        FireObject nodeB = CreateNode(nodesRoot.transform, "Node_B_Left", SensitivePrefabPath, new Vector3(-3.5f, 0.25f, 2.0f));
-        FireObject nodeC = CreateNode(nodesRoot.transform, "Node_C_Right", SensitivePrefabPath, new Vector3(3.5f, 0.25f, 2.0f));
-        FireObject nodeD = CreateNode(nodesRoot.transform, "Node_D_Right", SensitivePrefabPath, new Vector3(3.5f, 0.25f, -2.0f));
-
-        manager.startingNode = spark;
+        FireNode spark = CreateNode(nodesRoot.transform, "Spark_Start", SparkPrefabPath, new Vector3(0.0f, 0.25f, -5.0f));
+        FireNode nodeA = CreateNode(nodesRoot.transform, "Node_A_Left", SensitivePrefabPath, new Vector3(-3.5f, 0.25f, -2.0f));
+        FireNode nodeB = CreateNode(nodesRoot.transform, "Node_B_Left", SensitivePrefabPath, new Vector3(-3.5f, 0.25f, 2.0f));
+        FireNode nodeC = CreateNode(nodesRoot.transform, "Node_C_Right", SensitivePrefabPath, new Vector3(3.5f, 0.25f, 2.0f));
+        FireNode nodeD = CreateNode(nodesRoot.transform, "Node_D_Right", SensitivePrefabPath, new Vector3(3.5f, 0.25f, -2.0f));
 
         CreateEdge(edgesRoot.transform, "Edge_Spark_Left", spark, nodeA);
         CreateEdge(edgesRoot.transform, "Edge_Spark_Right", spark, nodeD);
@@ -70,7 +68,7 @@ public static class FirePropagationTestSceneBuilder
         EditorUtility.SetDirty(graphRoot);
     }
 
-    private static FireObject CreateNode(Transform parent, string name, string prefabPath, Vector3 position)
+    private static FireNode CreateNode(Transform parent, string name, string prefabPath, Vector3 position)
     {
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         GameObject node = prefab != null
@@ -82,21 +80,13 @@ public static class FirePropagationTestSceneBuilder
         node.transform.position = position;
         node.transform.rotation = Quaternion.identity;
 
-        FireObject fireObject = node.GetComponent<FireObject>();
-        if (fireObject == null)
+        FireNode fireNode = node.GetComponent<FireNode>();
+        if (fireNode == null)
         {
-            fireObject = node.AddComponent<FireObject>();
+            fireNode = node.AddComponent<FireNode>();
         }
 
-        ConfigureFireObject(fireObject);
-
-        FireGraphIdentity identity = node.GetComponent<FireGraphIdentity>();
-        if (identity == null)
-        {
-            identity = node.AddComponent<FireGraphIdentity>();
-        }
-
-        identity.nodeId = name;
+        ConfigureFireNode(fireNode);
 
         if (node.GetComponent<FireNodeGizmo>() == null)
         {
@@ -104,10 +94,10 @@ public static class FirePropagationTestSceneBuilder
         }
 
         EditorUtility.SetDirty(node);
-        return fireObject;
+        return fireNode;
     }
 
-    private static void CreateEdge(Transform parent, string name, FireObject source, FireObject target)
+    private static void CreateEdge(Transform parent, string name, FireNode source, FireNode target)
     {
         if (source == null || target == null)
         {
@@ -135,20 +125,20 @@ public static class FirePropagationTestSceneBuilder
         EditorUtility.SetDirty(edgeObject);
     }
 
-    private static void ConfigureFireObject(FireObject fireObject)
+    private static void ConfigureFireNode(FireNode fireNode)
     {
-        if (fireObject.nodeType == FireNodeType.Spark)
+        if (fireNode.nodeType == FireNodeType.Spark)
         {
-            fireObject.firePower = 4.0f;
-            fireObject.timeToDestroy = 10.0f;
-            fireObject.exposureDecayRate = 0.0f;
+            fireNode.firePower = 4.0f;
+            fireNode.timeToDestroy = 10.0f;
+            fireNode.exposureDecayRate = 0.0f;
             return;
         }
 
-        fireObject.ignitionResistance = 1.2f;
-        fireObject.firePower = 4.0f;
-        fireObject.exposureDecayRate = 0.05f;
-        fireObject.timeToDestroy = 10.0f;
+        fireNode.ignitionResistance = 1.2f;
+        fireNode.firePower = 4.0f;
+        fireNode.exposureDecayRate = 0.05f;
+        fireNode.timeToDestroy = 10.0f;
     }
 
     private static void CreateGround()

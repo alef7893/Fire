@@ -14,7 +14,7 @@ public enum FireNodeState
     Destroyed
 }
 
-public class FireObject : MonoBehaviour
+public class FireNode : MonoBehaviour
 {
     public FireNodeType nodeType = FireNodeType.Structure;
     public FireNodeState state = FireNodeState.Off;

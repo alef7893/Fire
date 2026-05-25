@@ -58,7 +58,7 @@ public class FireGraphBuilder : EditorWindow
 
     private static void ValidateGraph(bool includeInactive)
     {
-        FireObject[] fireObjects = Object.FindObjectsOfType<FireObject>(includeInactive);
+        FireNode[] fireObjects = Object.FindObjectsOfType<FireNode>(includeInactive);
         FireEdge[] fireEdges = Object.FindObjectsOfType<FireEdge>(includeInactive);
         HashSet<string> ids = new HashSet<string>();
         int explicitEdgeCount = 0;
@@ -78,14 +78,13 @@ public class FireGraphBuilder : EditorWindow
             }
         }
 
-        foreach (FireObject fireObject in fireObjects)
+        foreach (FireNode fireNode in fireObjects)
         {
-            FireGraphIdentity identity = fireObject.GetComponent<FireGraphIdentity>();
-            string id = identity != null ? identity.GetId() : fireObject.gameObject.name;
+            string id = fireNode.gameObject.name;
             if (!ids.Add(id))
             {
                 duplicatedIds++;
-                Debug.LogWarning($"Duplicated fire node id: {id}", fireObject);
+                Debug.LogWarning($"Duplicated fire node id: {id}", fireNode);
             }
 
         }

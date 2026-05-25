@@ -92,8 +92,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3957322be1d7e4a479b5efa3a46499d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startingNode: {fileID: 0}
-  igniteStartingNodeOnStart: 1
   graphRoot: {fileID: 3700657634277305113}
   treatConnectionsAsBidirectional: 1
   includeInactiveNodes: 1

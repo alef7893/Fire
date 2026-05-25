@@ -4,10 +4,6 @@ using UnityEngine;
 
 public class FireSimulationManager : MonoBehaviour
 {
-    [Header("Start")]
-    public FireObject startingNode;
-    public bool igniteStartingNodeOnStart = true;
-
     [Header("Graph")]
     public FireGraphRoot graphRoot;
     public bool treatConnectionsAsBidirectional = true;
@@ -18,25 +14,19 @@ public class FireSimulationManager : MonoBehaviour
     public float minimumEdgeDistance = 0.1f;
     public float propagationMultiplier = 5.0f;
 
-    private readonly List<FireObject> allNodes = new List<FireObject>();
-    private readonly List<FireObject> burningNodes = new List<FireObject>();
-    private readonly Dictionary<FireObject, List<RuntimeFireEdge>> graph = new Dictionary<FireObject, List<RuntimeFireEdge>>();
+    private readonly List<FireNode> allNodes = new List<FireNode>();
+    private readonly List<FireNode> burningNodes = new List<FireNode>();
+    private readonly Dictionary<FireNode, List<RuntimeFireEdge>> graph = new Dictionary<FireNode, List<RuntimeFireEdge>>();
 
     private class RuntimeFireEdge
     {
         public FireEdge edge;
-        public FireObject target;
+        public FireNode target;
     }
 
     private void Start()
     {
         BuildGraphFromScene();
-
-        if (igniteStartingNodeOnStart)
-        {
-            IgniteStartingNode();
-        }
-
         StartCoroutine(SpreadLoop());
     }
 
@@ -45,7 +35,7 @@ public class FireSimulationManager : MonoBehaviour
         BuildGraphFromScene();
     }
 
-    public void RegisterBurningNode(FireObject node)
+    public void RegisterBurningNode(FireNode node)
     {
         if (node == null || burningNodes.Contains(node))
         {
@@ -55,7 +45,7 @@ public class FireSimulationManager : MonoBehaviour
         burningNodes.Add(node);
     }
 
-    public void RemoveBurningNode(FireObject node)
+    public void RemoveBurningNode(FireNode node)
     {
         if (node == null)
         {
@@ -76,11 +66,11 @@ public class FireSimulationManager : MonoBehaviour
             graphRoot = GetComponent<FireGraphRoot>();
         }
 
-        FireObject[] sceneNodes = graphRoot != null
+        FireNode[] sceneNodes = graphRoot != null
             ? graphRoot.GetNodes(includeInactiveNodes)
-            : FindObjectsOfType<FireObject>(includeInactiveNodes);
+            : FindObjectsOfType<FireNode>(includeInactiveNodes);
 
-        foreach (FireObject node in sceneNodes)
+        foreach (FireNode node in sceneNodes)
         {
             if (node == null)
             {
@@ -119,7 +109,7 @@ public class FireSimulationManager : MonoBehaviour
         Debug.Log($"Runtime fire graph built with {allNodes.Count} nodes and {CountEdges()} directed edges.");
     }
 
-    private void AddEdge(FireObject source, FireObject target, FireEdge edgeComponent)
+    private void AddEdge(FireNode source, FireNode target, FireEdge edgeComponent)
     {
         if (source == null || target == null || source == target)
         {
@@ -165,8 +155,8 @@ public class FireSimulationManager : MonoBehaviour
             return;
         }
 
-        List<FireObject> snapshot = new List<FireObject>(burningNodes);
-        foreach (FireObject current in snapshot)
+        List<FireNode> snapshot = new List<FireNode>(burningNodes);
+        foreach (FireNode current in snapshot)
         {
             if (current == null)
             {
@@ -191,7 +181,7 @@ public class FireSimulationManager : MonoBehaviour
         }
     }
 
-    private void PropagateFrom(FireObject source, float deltaTime)
+    private void PropagateFrom(FireNode source, float deltaTime)
     {
         if (!graph.TryGetValue(source, out List<RuntimeFireEdge> edges))
         {
@@ -200,7 +190,7 @@ public class FireSimulationManager : MonoBehaviour
 
         foreach (RuntimeFireEdge edge in edges)
         {
-            FireObject target = edge.target;
+            FireNode target = edge.target;
             if (target == null || !target.CanIgnite())
             {
                 continue;
@@ -212,25 +202,13 @@ public class FireSimulationManager : MonoBehaviour
 
     private void DecayInactiveExposure(float deltaTime)
     {
-        foreach (FireObject node in allNodes)
+        foreach (FireNode node in allNodes)
         {
             if (node != null && !node.IsBurning())
             {
                 node.DecayExposure(deltaTime);
             }
         }
-    }
-
-    private void IgniteStartingNode()
-    {
-        if (startingNode == null)
-        {
-            Debug.LogWarning("No starting fire node has been assigned.");
-            return;
-        }
-
-        startingNode.Ignite();
-        RegisterBurningNode(startingNode);
     }
 
     private int CountEdges()

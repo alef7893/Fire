@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1830803823098771083}
   - component: {fileID: 3117759593734141145}
   - component: {fileID: 8483915232166341030}
-  - component: {fileID: 8858326433557809488}
   - component: {fileID: 6136816421366478315}
   m_Layer: 0
   m_Name: FireNode_Spark
@@ -94,19 +93,6 @@ MonoBehaviour:
   is_burning: 0
   is_burnt: 0
   burn_timer: 0
---- !u!114 &8858326433557809488
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7990953605634619116}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6fbab69874e960459405e9b4fe40927, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  nodeId: FireNode_Spark
 --- !u!114 &6136816421366478315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,7 +107,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   showGizmo: 1
   showLabel: 1
-  radius: 0.8
+  radius: 0.5
   centerSize: 0.08
   offColor: {r: 1, g: 0.85, b: 0.15, a: 0.85}
   burningColor: {r: 1, g: 0.1, b: 0, a: 0.95}

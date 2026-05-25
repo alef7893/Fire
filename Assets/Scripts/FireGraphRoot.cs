@@ -5,10 +5,10 @@ public class FireGraphRoot : MonoBehaviour
     public Transform nodesRoot;
     public Transform edgesRoot;
 
-    public FireObject[] GetNodes(bool includeInactive)
+    public FireNode[] GetNodes(bool includeInactive)
     {
         Transform searchRoot = nodesRoot != null ? nodesRoot : transform;
-        return searchRoot.GetComponentsInChildren<FireObject>(includeInactive);
+        return searchRoot.GetComponentsInChildren<FireNode>(includeInactive);
     }
 
     public FireEdge[] GetEdges(bool includeInactive)

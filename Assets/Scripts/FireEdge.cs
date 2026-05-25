@@ -16,8 +16,8 @@ public enum FireEdgeState
 
 public class FireEdge : MonoBehaviour
 {
-    public FireObject source;
-    public FireObject target;
+    public FireNode source;
+    public FireNode target;
     public bool enabledForPropagation = true;
     public FireSurfaceType surfaceType = FireSurfaceType.Ground;
     public float spreadDelay = 0.0f;
@@ -43,13 +43,22 @@ public class FireEdge : MonoBehaviour
     public float nodeArrivalEffectLifetime = 2.0f;
     public float effectDestroyDelay = 2.0f;
 
+    [Header("Dynamic Patch Scale")]
+    public bool useDynamicPatchScale = false;
+    [Range(0.0f, 1.0f)] public float firePatchInitialScaleFactor = 0.1f;
+    [Range(0.0f, 1.0f)] public float firePatchEdgeScaleFactor = 0.65f;
+    public float firePatchGrowDuration = 3.0f;
+    public float firePatchFadeDuration = 3.0f;
+    public AnimationCurve firePatchGrowthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+    public AnimationCurve firePatchFadeCurve = AnimationCurve.EaseInOut(0.0f, 1.0f, 1.0f, 0.0f);
+
     [Header("Ground Visual Debug")]
     public bool showGizmo = true;
     public Color edgeColor = new Color(1.0f, 0.55f, 0.05f, 0.9f);
     public float midpointSize = 0.12f;
 
-    private FireObject activeSource;
-    private FireObject activeTarget;
+    private FireNode activeSource;
+    private FireNode activeTarget;
     private FireSimulationManager simulationManager;
     private GameObject activeFrontFireEffect;
     private readonly System.Collections.Generic.List<GameObject> activeFirePatches = new System.Collections.Generic.List<GameObject>();
@@ -66,7 +75,7 @@ public class FireEdge : MonoBehaviour
         simulationManager = manager;
     }
 
-    public bool TryStartPropagation(FireObject startNode, FireSimulationManager manager)
+    public bool TryStartPropagation(FireNode startNode, FireSimulationManager manager)
     {
         if (!IsValid() || state != FireEdgeState.Idle || startNode == null)
         {
@@ -221,7 +230,8 @@ public class FireEdge : MonoBehaviour
     {
         Vector3 position = Vector3.Lerp(start, end, normalizedDistance) + fireEffectLocalOffset;
         GameObject patch = Instantiate(groundFirePatchPrefab, position, Quaternion.identity, transform);
-        patch.transform.localScale = firePatchLocalScale;
+        Vector3 peakScale = GetPatchPeakScale(normalizedDistance);
+        patch.transform.localScale = useDynamicPatchScale ? peakScale * Mathf.Max(0.0f, firePatchInitialScaleFactor) : peakScale;
         if (muteFirePatchAudio)
         {
             MuteAudioSources(patch);
@@ -238,9 +248,82 @@ public class FireEdge : MonoBehaviour
         }
 
         activeFirePatches.Add(patch);
-        if (firePatchLifetime > 0.0f)
+        if (useDynamicPatchScale)
+        {
+            StartCoroutine(AnimateFirePatchScale(patch, peakScale));
+        }
+        else if (firePatchLifetime > 0.0f)
         {
             Destroy(patch, firePatchLifetime);
+        }
+    }
+
+    private Vector3 GetPatchPeakScale(float normalizedDistance)
+    {
+        float edgeScaleFactor = Mathf.Clamp01(firePatchEdgeScaleFactor);
+        float centerFactor = 1.0f - Mathf.Abs(Mathf.Clamp01(normalizedDistance) - 0.5f) * 2.0f;
+        float scaleFactor = Mathf.Lerp(edgeScaleFactor, 1.0f, centerFactor);
+        return firePatchLocalScale * scaleFactor;
+    }
+
+    private System.Collections.IEnumerator AnimateFirePatchScale(GameObject patch, Vector3 peakScale)
+    {
+        if (patch == null)
+        {
+            yield break;
+        }
+
+        Vector3 initialScale = peakScale * Mathf.Max(0.0f, firePatchInitialScaleFactor);
+        float growDuration = Mathf.Max(0.0f, firePatchGrowDuration);
+        if (growDuration > 0.0f)
+        {
+            float elapsed = 0.0f;
+            while (elapsed < growDuration && patch != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / growDuration);
+                float curvedT = firePatchGrowthCurve != null ? firePatchGrowthCurve.Evaluate(t) : t;
+                patch.transform.localScale = Vector3.LerpUnclamped(initialScale, peakScale, curvedT);
+                yield return null;
+            }
+        }
+
+        if (patch == null)
+        {
+            yield break;
+        }
+
+        patch.transform.localScale = peakScale;
+
+        float stableDuration = Mathf.Max(0.0f, firePatchLifetime - growDuration - Mathf.Max(0.0f, firePatchFadeDuration));
+        if (stableDuration > 0.0f)
+        {
+            yield return new WaitForSeconds(stableDuration);
+        }
+
+        if (patch == null)
+        {
+            yield break;
+        }
+
+        float fadeDuration = Mathf.Max(0.0f, firePatchFadeDuration);
+        if (fadeDuration > 0.0f)
+        {
+            float elapsed = 0.0f;
+            Vector3 fadeStartScale = patch.transform.localScale;
+            while (elapsed < fadeDuration && patch != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / fadeDuration);
+                float scaleFactor = firePatchFadeCurve != null ? firePatchFadeCurve.Evaluate(t) : 1.0f - t;
+                patch.transform.localScale = fadeStartScale * Mathf.Max(0.0f, scaleFactor);
+                yield return null;
+            }
+        }
+
+        if (patch != null)
+        {
+            Destroy(patch);
         }
     }
 
@@ -317,6 +400,28 @@ public class FireEdge : MonoBehaviour
 
         Gizmos.color = edgeColor;
         Gizmos.DrawLine(source.transform.position, target.transform.position);
-        Gizmos.DrawSphere(GetMidpoint(), Mathf.Max(0.01f, midpointSize));
+        DrawPatchGizmos();
+    }
+
+    private void DrawPatchGizmos()
+    {
+        Vector3 start = source.transform.position;
+        Vector3 end = target.transform.position;
+        float totalDistance = Vector3.Distance(start, end);
+        if (totalDistance <= 0.01f)
+        {
+            return;
+        }
+
+        float spacing = Mathf.Max(0.1f, firePatchSpacing);
+        float sphereRadius = Mathf.Max(0.01f, midpointSize);
+
+        for (float distance = 0.0f; distance <= totalDistance; distance += spacing)
+        {
+            float normalizedDistance = Mathf.Clamp01(distance / totalDistance);
+            Gizmos.DrawSphere(Vector3.Lerp(start, end, normalizedDistance), sphereRadius);
+        }
+
+        Gizmos.DrawSphere(end, sphereRadius);
     }
 }

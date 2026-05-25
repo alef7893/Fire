@@ -100,6 +100,7 @@ public static class FireGraphPrefabFactory
         edge.muteFirePatchAudio = true;
         edge.firePatchSpacing = 0.85f;
         edge.firePatchLifetime = 18.0f;
+        ApplyDynamicFireScaleDefaults(edge);
         edge.nodeArrivalEffectLifetime = 2.0f;
         edge.effectDestroyDelay = 2.0f;
         edge.showGizmo = true;
@@ -108,6 +109,44 @@ public static class FireGraphPrefabFactory
 
         PrefabUtility.SaveAsPrefabAsset(edgeObject, $"{GraphPrefabFolder}/FireEdge_Ground_BigSimple.prefab");
         Object.DestroyImmediate(edgeObject);
+    }
+
+    [MenuItem("Tools/Fire Simulation/Apply Dynamic Fire Scale Defaults")]
+    public static void ApplyDynamicFireScaleDefaultsToPrefab()
+    {
+        string edgePrefabPath = $"{GraphPrefabFolder}/FireEdge_Ground_BigSimple.prefab";
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(edgePrefabPath);
+        if (prefab == null)
+        {
+            Debug.LogError($"Could not find edge prefab at {edgePrefabPath}.");
+            return;
+        }
+
+        FireEdge edge = prefab.GetComponent<FireEdge>();
+        if (edge == null)
+        {
+            Debug.LogError($"Could not find FireEdge on {edgePrefabPath}.");
+            return;
+        }
+
+        ApplyDynamicFireScaleDefaults(edge);
+        EditorUtility.SetDirty(edge);
+        EditorUtility.SetDirty(prefab);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        Debug.Log("Applied dynamic fire scale defaults to FireEdge_Ground_BigSimple prefab.");
+    }
+
+    private static void ApplyDynamicFireScaleDefaults(FireEdge edge)
+    {
+        edge.useDynamicPatchScale = true;
+        edge.firePatchInitialScaleFactor = 0.1f;
+        edge.firePatchEdgeScaleFactor = 0.65f;
+        edge.firePatchGrowDuration = 3.0f;
+        edge.firePatchFadeDuration = 3.0f;
+        edge.firePatchGrowthCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+        edge.firePatchFadeCurve = AnimationCurve.EaseInOut(0.0f, 1.0f, 1.0f, 0.0f);
     }
 
     private static void CreateNodePrefab(
@@ -128,29 +167,26 @@ public static class FireGraphPrefabFactory
         collider.radius = 0.35f;
         collider.isTrigger = true;
 
-        FireObject fireObject = node.AddComponent<FireObject>();
-        fireObject.nodeType = nodeType;
-        fireObject.state = initialState;
-        fireObject.unlitMaterial = unlitMaterial;
-        fireObject.litMaterial = litMaterial;
-        fireObject.destroyedMaterial = destroyedMaterial;
-        fireObject.ignitionResistance = ignitionResistance;
-        fireObject.firePower = firePower;
-        fireObject.exposureDecayRate = exposureDecayRate;
-        fireObject.timeToDestroy = timeToDestroy;
-        fireObject.canBeDestroyed = true;
-        fireObject.isCritical = false;
-        fireObject.burningEffectPrefab = null;
-        fireObject.burningEffectLocalOffset = new Vector3(0.0f, 0.35f, 0.0f);
-        fireObject.burningEffectLocalScale = Vector3.one * 0.4f;
-        fireObject.parentBurningEffectToNode = true;
-        fireObject.burningEffectDestroyDelay = 2.0f;
-        fireObject.blinkVegetationWhenBurning = false;
-        fireObject.vegetationBlinkInterval = 0.25f;
-        fireObject.fireIntensity = initialState == FireNodeState.Burning ? 1.0f : 0.0f;
-
-        FireGraphIdentity identity = node.AddComponent<FireGraphIdentity>();
-        identity.nodeId = prefabName;
+        FireNode fireNode = node.AddComponent<FireNode>();
+        fireNode.nodeType = nodeType;
+        fireNode.state = initialState;
+        fireNode.unlitMaterial = unlitMaterial;
+        fireNode.litMaterial = litMaterial;
+        fireNode.destroyedMaterial = destroyedMaterial;
+        fireNode.ignitionResistance = ignitionResistance;
+        fireNode.firePower = firePower;
+        fireNode.exposureDecayRate = exposureDecayRate;
+        fireNode.timeToDestroy = timeToDestroy;
+        fireNode.canBeDestroyed = true;
+        fireNode.isCritical = false;
+        fireNode.burningEffectPrefab = null;
+        fireNode.burningEffectLocalOffset = new Vector3(0.0f, 0.35f, 0.0f);
+        fireNode.burningEffectLocalScale = Vector3.one * 0.4f;
+        fireNode.parentBurningEffectToNode = true;
+        fireNode.burningEffectDestroyDelay = 2.0f;
+        fireNode.blinkVegetationWhenBurning = false;
+        fireNode.vegetationBlinkInterval = 0.25f;
+        fireNode.fireIntensity = initialState == FireNodeState.Burning ? 1.0f : 0.0f;
 
         FireNodeGizmo gizmo = node.AddComponent<FireNodeGizmo>();
         gizmo.radius = 0.8f;

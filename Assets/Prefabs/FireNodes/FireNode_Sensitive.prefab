@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 6976229192029824032}
   - component: {fileID: 2570792884538715699}
   - component: {fileID: 8386375199902708422}
-  - component: {fileID: 2983532337931245262}
   - component: {fileID: 7576802329668572578}
   m_Layer: 0
   m_Name: FireNode_Sensitive
@@ -94,19 +93,6 @@ MonoBehaviour:
   is_burning: 0
   is_burnt: 0
   burn_timer: 0
---- !u!114 &2983532337931245262
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5350118220192128687}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6fbab69874e960459405e9b4fe40927, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  nodeId: FireNode_Sensitive
 --- !u!114 &7576802329668572578
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,7 +107,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   showGizmo: 1
   showLabel: 1
-  radius: 0.8
+  radius: 0.3
   centerSize: 0.08
   offColor: {r: 1, g: 0.85, b: 0.15, a: 0.85}
   burningColor: {r: 1, g: 0.1, b: 0, a: 0.95}

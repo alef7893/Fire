@@ -37,18 +37,18 @@ public static class FireGraphSceneTools
         }
 
         graphRoot.nodesRoot = nodesRoot;
-        FireObject[] fireObjects = Object.FindObjectsOfType<FireObject>(true);
+        FireNode[] fireObjects = Object.FindObjectsOfType<FireNode>(true);
         int movedCount = 0;
 
-        foreach (FireObject fireObject in fireObjects)
+        foreach (FireNode fireNode in fireObjects)
         {
-            if (fireObject == null || fireObject.transform == nodesRoot || fireObject.transform.IsChildOf(nodesRoot))
+            if (fireNode == null || fireNode.transform == nodesRoot || fireNode.transform.IsChildOf(nodesRoot))
             {
                 continue;
             }
 
-            fireObject.transform.SetParent(nodesRoot, true);
-            EditorUtility.SetDirty(fireObject.gameObject);
+            fireNode.transform.SetParent(nodesRoot, true);
+            EditorUtility.SetDirty(fireNode.gameObject);
             movedCount++;
         }
 
