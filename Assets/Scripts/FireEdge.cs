@@ -29,6 +29,7 @@ public class FireEdge : MonoBehaviour
     [Range(0.0f, 1.0f)] public float progress = 0.0f;
 
     [Header("Ground Fire Effect")]
+    public GameObject movingFireBridgePrefab;
     public GameObject groundFirePatchPrefab;
     public GameObject nodeArrivalEffectPrefab;
     public Vector3 fireEffectLocalOffset = new Vector3(0.0f, 0.25f, 0.0f);
@@ -37,13 +38,26 @@ public class FireEdge : MonoBehaviour
     public bool alignEffectToEdge = true;
     public bool muteFirePatchAudio = true;
     public float firePatchSpacing = 1.0f;
+    public float firePatchLateralJitter = 0.0f;
     public float firePatchLifetime = 18.0f;
     public float nodeArrivalEffectLifetime = 2.0f;
+
+    [Header("Moving Fire Bridge")]
+    public bool useMovingFireBridge = true;
+    public float movingFireMinimumScale = 0.2f;
+    public float movingFireMaximumScale = 0.5f;
+    public float movingFireScaleSpeed = 0.5f;
+    [Range(0.0f, 1.0f)] public float movingFireProgressOffset = 0.09f;
+    public float movingFireDestroyDelay = 1.0f;
+    public bool muteMovingFireAudio = false;
+    [Range(0.0f, 1.0f)] public float movingFireAudioVolume = 0.45f;
+    [Range(0.0f, 1.0f)] public float movingFireAudioSpatialBlend = 1.0f;
+    public AnimationCurve movingFireScaleCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
 
     [Header("Dynamic Patch Scale")]
     public bool useDynamicPatchScale = false;
     [Range(0.0f, 1.0f)] public float firePatchEdgeScaleFactor = 0.65f;
-    public float firePatchMinimumScale = 0.0f;
+    public float firePatchMinimumScale = 0.2f;
     public float firePatchMaximumScale = 1.5f;
     public float firePatchResizeSpeed = 1.0f;
     public bool scaleGrowthByPropagationCost = true;
@@ -60,9 +74,11 @@ public class FireEdge : MonoBehaviour
     private FireNode activeSource;
     private FireNode activeTarget;
     private FireSimulationManager simulationManager;
+    private GameObject activeMovingFireBridge;
     private readonly System.Collections.Generic.List<GameObject> activeFirePatches = new System.Collections.Generic.List<GameObject>();
     private float delayTimer;
     private float nextPatchDistance;
+    private float movingFireScaleTimer;
 
     public bool IsValid()
     {
@@ -101,6 +117,8 @@ public class FireEdge : MonoBehaviour
         progress = 0.0f;
         delayTimer = Mathf.Max(0.0f, spreadDelay);
         nextPatchDistance = 0.0f;
+        movingFireScaleTimer = 0.0f;
+        CreateMovingFireBridge();
         UpdateFireVisuals();
         return true;
     }
@@ -165,7 +183,59 @@ public class FireEdge : MonoBehaviour
 
         Vector3 start = activeSource.transform.position;
         Vector3 end = activeTarget.transform.position;
+        UpdateMovingFireBridge(start, end);
         SpawnFirePatches(start, end);
+    }
+
+    private void CreateMovingFireBridge()
+    {
+        if (!useMovingFireBridge || movingFireBridgePrefab == null || activeMovingFireBridge != null)
+        {
+            return;
+        }
+
+        activeMovingFireBridge = Instantiate(movingFireBridgePrefab, transform);
+        activeMovingFireBridge.transform.localScale = Vector3.one * Mathf.Max(0.0f, movingFireMinimumScale);
+
+        ConfigureAudioSources(
+            activeMovingFireBridge,
+            muteMovingFireAudio,
+            movingFireAudioVolume,
+            movingFireAudioSpatialBlend);
+    }
+
+    private void UpdateMovingFireBridge(Vector3 start, Vector3 end)
+    {
+        if (activeMovingFireBridge == null)
+        {
+            return;
+        }
+
+        float visualProgress = Mathf.Clamp01(progress - Mathf.Clamp01(movingFireProgressOffset));
+        activeMovingFireBridge.transform.position = Vector3.Lerp(start, end, visualProgress) + fireEffectLocalOffset;
+        activeMovingFireBridge.transform.localScale = Vector3.one * GetMovingFireBridgeScale();
+
+        if (alignEffectToEdge)
+        {
+            Vector3 direction = end - start;
+            direction.y = 0.0f;
+            if (direction.sqrMagnitude > 0.0001f)
+            {
+                activeMovingFireBridge.transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
+        }
+    }
+
+    private float GetMovingFireBridgeScale()
+    {
+        float minScale = Mathf.Max(0.0f, movingFireMinimumScale);
+        float maxScale = Mathf.Max(minScale, movingFireMaximumScale);
+        float speed = Mathf.Max(0.01f, movingFireScaleSpeed);
+        movingFireScaleTimer += Time.deltaTime * speed;
+
+        float cycle = Mathf.PingPong(movingFireScaleTimer, 1.0f);
+        float curvedCycle = movingFireScaleCurve != null ? movingFireScaleCurve.Evaluate(cycle) : cycle;
+        return Mathf.Lerp(minScale, maxScale, Mathf.Clamp01(curvedCycle));
     }
 
     private void SpawnFirePatches(Vector3 start, Vector3 end)
@@ -193,7 +263,7 @@ public class FireEdge : MonoBehaviour
 
     private void CreateFirePatch(Vector3 start, Vector3 end, float normalizedDistance)
     {
-        Vector3 position = Vector3.Lerp(start, end, normalizedDistance) + fireEffectLocalOffset;
+        Vector3 position = Vector3.Lerp(start, end, normalizedDistance) + GetLateralJitterOffset(start, end) + fireEffectLocalOffset;
         GameObject patchRoot = new GameObject($"FirePatch_{activeFirePatches.Count:00}");
         patchRoot.transform.SetParent(transform);
         patchRoot.transform.position = position;
@@ -241,6 +311,25 @@ public class FireEdge : MonoBehaviour
         float edgeScaleFactor = Mathf.Clamp01(firePatchEdgeScaleFactor);
         float centerFactor = 1.0f - Mathf.Abs(Mathf.Clamp01(normalizedDistance) - 0.5f) * 2.0f;
         return Mathf.Lerp(edgeScaleFactor, 1.0f, centerFactor);
+    }
+
+    private Vector3 GetLateralJitterOffset(Vector3 start, Vector3 end)
+    {
+        float jitter = Mathf.Max(0.0f, firePatchLateralJitter);
+        if (jitter <= 0.0f)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 direction = end - start;
+        direction.y = 0.0f;
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 lateral = Vector3.Cross(Vector3.up, direction.normalized).normalized;
+        return lateral * Random.Range(-jitter, jitter);
     }
 
     private System.Collections.IEnumerator AnimateFirePatchScale(GameObject patchRoot, float minimumScale, float maximumScale)
@@ -295,7 +384,7 @@ public class FireEdge : MonoBehaviour
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / fadeDuration);
                 float scaleFactor = firePatchFadeCurve != null ? firePatchFadeCurve.Evaluate(t) : 1.0f - t;
-                float scale = Mathf.LerpUnclamped(minimumScale, fadeStartScale, Mathf.Max(0.0f, scaleFactor));
+                float scale = Mathf.LerpUnclamped(0.0f, fadeStartScale, Mathf.Max(0.0f, scaleFactor));
                 patchRoot.transform.localScale = Vector3.one * Mathf.Max(0.0f, scale);
                 yield return null;
             }
@@ -309,11 +398,26 @@ public class FireEdge : MonoBehaviour
 
     private void MuteAudioSources(GameObject instance)
     {
+        ConfigureAudioSources(instance, muted: true, volume: 0.0f, spatialBlend: 1.0f);
+    }
+
+    private void ConfigureAudioSources(GameObject instance, bool muted, float volume, float spatialBlend)
+    {
         AudioSource[] audioSources = instance.GetComponentsInChildren<AudioSource>();
         foreach (AudioSource audioSource in audioSources)
         {
-            audioSource.mute = true;
-            audioSource.Stop();
+            audioSource.mute = muted;
+            audioSource.volume = Mathf.Clamp01(volume);
+            audioSource.spatialBlend = Mathf.Clamp01(spatialBlend);
+
+            if (muted)
+            {
+                audioSource.Stop();
+            }
+            else if (!audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
         }
     }
 
@@ -329,6 +433,8 @@ public class FireEdge : MonoBehaviour
             activeTarget.Ignite();
             simulationManager?.RegisterBurningNode(activeTarget);
         }
+
+        StopMovingFireBridge();
     }
 
     private void CreateNodeArrivalEffect(Vector3 nodePosition)
@@ -345,6 +451,28 @@ public class FireEdge : MonoBehaviour
         {
             Destroy(arrivalEffect, nodeArrivalEffectLifetime);
         }
+    }
+
+    private void StopMovingFireBridge()
+    {
+        if (activeMovingFireBridge == null)
+        {
+            return;
+        }
+
+        ParticleSystem[] particleSystems = activeMovingFireBridge.GetComponentsInChildren<ParticleSystem>();
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        Destroy(activeMovingFireBridge, Mathf.Max(0.0f, movingFireDestroyDelay));
+        activeMovingFireBridge = null;
+    }
+
+    private void OnDisable()
+    {
+        StopMovingFireBridge();
     }
 
     private void OnDrawGizmos()

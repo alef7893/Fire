@@ -41,6 +41,8 @@
 
 # Visual Studio cache directory
 .vs/
+Thumbs.db
+Thumbs.db.meta
 
 # Gradle cache directory
 .gradle/

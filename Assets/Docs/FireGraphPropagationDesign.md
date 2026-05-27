@@ -96,6 +96,7 @@ Representa una arista de propagacion sobre suelo plano.
 Usa:
 
 ```text
+movingFireBridgePrefab: VFX_Fire_01_Big_Simple
 groundFirePatchPrefab: VFX_Fire_01_Big_Simple
 nodeArrivalEffectPrefab: VFX_Fire_01_Small_Simple
 ```
@@ -108,12 +109,22 @@ propagationCostMultiplier: 2.0
 fireEffectLocalOffset: (0, 0, 0)
 firePatchLocalScale: (0.6, 0.6, 0.6)
 firePatchSpacing: 0.6
+firePatchLateralJitter: 0.25
 firePatchLifetime: 18.0
 nodeArrivalEffectLifetime: 2.0
 muteFirePatchAudio: true
+useMovingFireBridge: true
+movingFireMinimumScale: 0.2
+movingFireMaximumScale: 0.5
+movingFireScaleSpeed: 0.5
+movingFireProgressOffset: 0.09
+movingFireDestroyDelay: 1.0
+muteMovingFireAudio: false
+movingFireAudioVolume: 0.45
+movingFireAudioSpatialBlend: 1.0
 useDynamicPatchScale: true
 firePatchEdgeScaleFactor: 0.65
-firePatchMinimumScale: 0.0
+firePatchMinimumScale: 0.2
 firePatchMaximumScale: 1.5
 firePatchResizeSpeed: 1.0
 scaleGrowthByPropagationCost: true
@@ -288,11 +299,14 @@ Luego el manager agrega la conexion `source -> target`. Si el grafo es bidirecci
 
 ## Propagacion Visual
 
-La arista usa patches de fuego sobre el suelo:
+La arista usa un puente movil y patches de fuego sobre el suelo:
 
 ```text
+Moving Fire Bridge
 Ground Fire Patches
 ```
+
+`Moving Fire Bridge` es una llama temporal que avanza sobre la arista para cubrir visualmente los espacios entre patches. Su escala cicla entre `movingFireMinimumScale` y `movingFireMaximumScale`, y `movingFireProgressOffset` permite retrasarla visualmente respecto al frente logico de propagacion.
 
 La posicion de cada patch se calcula con:
 
@@ -334,6 +348,8 @@ position = Lerp(start, end, normalizedDistance) + fireEffectLocalOffset
 
 El gizmo de la arista dibuja una esfera en cada posicion estimada de patch. Esto permite ajustar `firePatchSpacing` desde la vista Scene antes de ejecutar Play.
 
+`firePatchLateralJitter` desplaza cada patch ligeramente hacia la izquierda o derecha de la arista. Este desplazamiento es solo visual: no cambia las conexiones del grafo ni la direccion real de propagacion.
+
 ## Escala Dinamica De Patches
 
 El sistema ya tiene parametros para variar la escala de cada patch:
@@ -353,7 +369,7 @@ firePatchFadeCurve
 
 La intencion de esta seccion es:
 
-- que el patch nazca pequeno;
+- que el patch nazca con una escala minima visible;
 - crezca hasta una escala objetivo;
 - se mantenga visible durante su vida util;
 - disminuya antes de destruirse.

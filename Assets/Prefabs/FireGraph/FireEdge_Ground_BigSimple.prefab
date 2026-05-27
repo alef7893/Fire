@@ -53,6 +53,7 @@ MonoBehaviour:
   state: 0
   propagationSpeed: 1
   progress: 0
+  movingFireBridgePrefab: {fileID: 8829451551789304542, guid: 244b1cc8940bd0844a05812855fbe45d, type: 3}
   groundFirePatchPrefab: {fileID: 8829451551789304542, guid: 244b1cc8940bd0844a05812855fbe45d, type: 3}
   nodeArrivalEffectPrefab: {fileID: 1781949194303238870, guid: dd986d04bcc6dc748a53d8c3d1d42a6d, type: 3}
   fireEffectLocalOffset: {x: 0, y: 0, z: 0}
@@ -61,11 +62,21 @@ MonoBehaviour:
   alignEffectToEdge: 1
   muteFirePatchAudio: 1
   firePatchSpacing: 0.6
+  firePatchLateralJitter: 0.25
   firePatchLifetime: 18
   nodeArrivalEffectLifetime: 2
+  useMovingFireBridge: 1
+  movingFireMinimumScale: 0.2
+  movingFireMaximumScale: 0.5
+  movingFireScaleSpeed: 0.5
+  movingFireProgressOffset: 0.09
+  movingFireDestroyDelay: 1
+  muteMovingFireAudio: 0
+  movingFireAudioVolume: 0.45
+  movingFireAudioSpatialBlend: 1
   useDynamicPatchScale: 1
   firePatchEdgeScaleFactor: 0.65
-  firePatchMinimumScale: 0
+  firePatchMinimumScale: 0.2
   firePatchMaximumScale: 1.5
   firePatchResizeSpeed: 1
   scaleGrowthByPropagationCost: 1
