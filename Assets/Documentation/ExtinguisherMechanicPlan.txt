@@ -1,0 +1,45 @@
+Pendientes - Mecanica del extintor
+
+Estado actual
+La mecanica base del extintor para PC ya funciona. El jugador puede agarrar el extintor, disparar agua y apagar fuego en nodos, patches y fuego movil del grafo V2. La propagacion del fuego tambien puede detenerse al apagar patches o suprimir la llama movil.
+
+Pendientes principales
+
+1. Separar entrada de usuario y logica del extintor
+- Crear un componente central para la logica comun del extintor.
+- Mantener el disparo, deteccion de impacto y consumo de agente extintor fuera de scripts dependientes de PC o VR.
+- Crear un interactor para PC que use teclado y mouse.
+- Preparar un interactor VR que pueda llamar a la misma logica comun.
+
+2. Preparar adaptacion VR
+- Definir puntos de agarre compatibles con controladores o manos.
+- Conectar el trigger del controlador o gesto de mano con el disparo del extintor.
+- Validar si XR Simulator permite probar el flujo basico.
+- Dejar preparado el prefab para pruebas futuras con hardware real.
+
+3. Mejorar retroalimentacion de uso
+- Agregar sonido de disparo del extintor.
+- Agregar feedback visual cuando el agua impacta fuego.
+- Ajustar el efecto visual del chorro para que represente mejor agua o espuma.
+- Revisar alcance, radio y fuerza del agua para que el apagado sea claro y justo.
+
+4. Agregar recurso limitado
+- Definir cantidad maxima de agente extintor.
+- Reducir la carga mientras se dispara.
+- Bloquear el disparo cuando la carga llegue a cero.
+- Agregar indicador visual de carga restante.
+
+5. Integrar con gameplay
+- Definir objetivos de mision relacionados con apagar nodos o proteger vegetacion.
+- Conectar la condicion de derrota del nodo protegido con el flujo real del juego.
+- Agregar mensajes o UI de alerta para vegetacion protegida.
+- Definir reinicio o finalizacion de mision.
+
+6. Pulido y balance
+- Ajustar tiempos de crecimiento, enfriamiento y apagado.
+- Ajustar la velocidad de propagacion por aristas.
+- Ajustar escala visual de nodos, patches y fuego movil.
+- Revisar que el extintor no apague demasiado rapido ni demasiado lento.
+
+Criterio pendiente mas importante
+La logica de apagar fuego debe mantenerse independiente del sistema de entrada. PC y VR deben usar la misma mecanica de extintor; solo debe cambiar la forma en que el jugador agarra el objeto y activa el disparo.

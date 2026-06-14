@@ -1,0 +1,31 @@
+{
+    "use_batch_mode": false,
+    "log_location": "meta_xrsim.log",
+    "tracking": {
+        "data_replay_method": "single",
+        "movement": {
+            "default": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/body_eye_face_default.proto.bin"
+        },
+        "hand": {
+            "joints_path": {
+                "default": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/hand_frames_IsdkRayForward.json",
+                "poke": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/hand_frames_IsdkPoke.json",
+                "pinch": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/hand_frames_IsdkPinch.json",
+                "grab": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/hand_frames_IsdkGrab.json",
+                "sidefist": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/hand_frames_IsdkSideFist.json"
+            },
+            "mesh_path": "C:/Program Files/MetaXRSimulator/v201.0/config/tracking/HandMeshesData_Valid.json"
+        }
+    },
+    "ses_texture_format": "jpg",
+    "ses_passthrough_resolution": {
+        "width": 1024,
+        "height": 1024
+    },
+    "ses_protocol_version": "v2",
+    "userid_source_type": "generated",
+    "use_legacy_input": false,
+    "device_profile": "Meta Quest 3",
+    "frontend_addr": "[::1]:33794",
+    "use_offscreen_mode": true
+}

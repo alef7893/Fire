@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5620562564614983753
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5145408435983301348}
+  - component: {fileID: 5486514226160172043}
+  m_Layer: 0
+  m_Name: FireEdge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5145408435983301348
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5620562564614983753}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5486514226160172043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5620562564614983753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d571d07354840884f9a9a13631b2195c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  source: {fileID: 0}
+  target: {fileID: 0}
+  enabledForPropagation: 1
+  bidirectional: 1
+  heatPower: 1.15
+  propagationSpeed: 0.75
+  scalePropagationByDistance: 1
+  resetProgressWhenHeatStops: 0
+  sourceToTargetProgress: 0
+  targetToSourceProgress: 0
+  useStaticPatches: 1
+  patchPrefab: {fileID: 2126268198718221051, guid: b707ba7152230df48ba9baa6dec99138, type: 3}
+  patchSpacing: 1
+  patchWorldOffset: {x: 0, y: 0, z: 0}
+  patchesRoot: {fileID: 0}
+  useMovingFireVisual: 1
+  movingFirePrefab: {fileID: 4476994433885945124, guid: d09999682da09db4bafa70fbe676db36, type: 3}
+  movingFireScale: {x: 0.75, y: 0.75, z: 0.75}
+  movingFireWorldOffset: {x: 0, y: 0, z: 0}
+  movingFireRoot: {fileID: 0}
+  showGizmo: 1
+  edgeColor: {r: 1, g: 0.54901963, b: 0.050980397, a: 0.9}
+  lineThickness: 4
+  showPatchSlotGizmos: 1
+  patchSlotColor: {r: 1, g: 0.55, b: 0.05, a: 0.55}
+  patchSlotRadius: 0.14

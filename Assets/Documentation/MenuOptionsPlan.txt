@@ -1,0 +1,138 @@
+Lista de opciones de menu para el simulador VR de control de incendios
+
+Escena: Menu Principal
+
+Menu principal 3D
+
+- Iniciar Tutorial
+  Funcion: Carga la escena de tutorial. Debe ser la opcion recomendada para usuarios nuevos.
+
+- Iniciar Mision
+  Funcion: Carga directamente la escena principal del juego para usuarios que ya conocen los controles.
+
+- Controles
+  Funcion: Abre un panel 3D con los controles basicos: movimiento, interaccion con botones, uso del extintor o manguera y herramientas disponibles.
+
+- Opciones
+  Funcion: Abre configuraciones basicas de la experiencia VR, como volumen, comodidad, giro, sensibilidad o altura del jugador.
+
+- Creditos
+  Funcion: Muestra el equipo, curso y proposito del simulador.
+
+- Salir del Juego
+  Funcion: Cierra la aplicacion en build. En el editor puede mostrar un mensaje o ejecutar Application.Quit sin efecto visible.
+
+Submenu: Opciones
+
+- Volumen
+  Funcion: Ajusta audio general y efectos.
+
+- Comodidad VR
+  Funcion: Alterna ayudas de comodidad como giro por pasos, vineta o reduccion de efectos, si se implementan.
+
+- Restablecer posicion
+  Funcion: Reubica al jugador frente al menu.
+
+- Volver
+  Funcion: Regresa al menu principal.
+
+
+Escena: Tutorial
+
+Menu inicial de tutorial
+
+- Comenzar practica
+  Funcion: Inicia la secuencia de entrenamiento.
+
+- Ver controles
+  Funcion: Muestra un recordatorio de movimiento, interaccion y herramienta activa.
+
+- Volver al menu
+  Funcion: Regresa al menu principal.
+
+Menu contextual durante tutorial
+
+- Repetir instruccion
+  Funcion: Vuelve a mostrar la instruccion actual.
+
+- Saltar paso
+  Funcion: Permite avanzar si el usuario ya entiende la mecanica.
+
+- Reiniciar tutorial
+  Funcion: Restablece el fuego pequeno, herramientas y objetivos del entrenamiento.
+
+- Pausar
+  Funcion: Abre el menu de pausa del tutorial.
+
+Menu final de tutorial
+
+- Ir a mision principal
+  Funcion: Carga la escena principal del juego.
+
+- Repetir tutorial
+  Funcion: Reinicia el entrenamiento.
+
+- Volver al menu
+  Funcion: Regresa al menu principal.
+
+
+Escena: Escenario Principal
+
+Panel de mision o HUD 3D
+
+- Objetivo actual
+  Funcion: Muestra la tarea principal, por ejemplo extinguir todos los focos antes de que alcancen la vegetacion.
+
+- Temporizador
+  Funcion: Muestra el limite de tiempo de emergencia.
+
+- Estado del incendio
+  Funcion: Indica focos activos, focos restantes o nivel de propagacion.
+
+- Alerta de vegetacion
+  Funcion: Advierte si el fuego se acerca a areas naturales vulnerables.
+
+- Salud o Riesgo
+  Funcion: Muestra el peligro del jugador si se implementa dano por proximidad al fuego.
+
+Menu de pausa
+
+- Continuar
+  Funcion: Cierra el menu y reanuda la mision.
+
+- Reiniciar mision
+  Funcion: Recarga la escena principal.
+
+- Ver objetivos
+  Funcion: Muestra objetivos y condiciones de victoria o derrota.
+
+- Controles
+  Funcion: Muestra un recordatorio rapido de los controles.
+
+- Volver al menu principal
+  Funcion: Sale de la mision y carga el menu principal.
+
+Menu final de mision
+
+- Reintentar
+  Funcion: Recarga la mision.
+
+- Ir al tutorial
+  Funcion: Carga el tutorial para practicar si el jugador fallo o quiere repasar.
+
+- Volver al menu
+  Funcion: Carga el menu principal.
+
+Estados finales recomendados
+
+- Victoria
+  Condicion: Todos los nodos de fuego fueron extinguidos.
+
+- Derrota por propagacion
+  Condicion: El fuego alcanza la vegetacion o un area natural protegida.
+
+- Derrota por tiempo
+  Condicion: Se agota el limite de emergencia.
+
+- Derrota por dano
+  Condicion: El jugador recibe demasiado dano por proximidad al fuego, si esta mecanica se implementa.
