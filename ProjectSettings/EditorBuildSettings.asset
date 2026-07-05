@@ -6,14 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/MainMenuScene.unity
+    path: Assets/Scenes/MainMenu.unity
     guid: b5c9d7082a7e4a74a56bdbbfc89f6a31
   - enabled: 1
-    path: Assets/Scenes/TutorialScene.unity
-    guid: ef38131deee46514793e6673cbb5dbb0
+    path: Assets/Scenes/M00_Training.unity
+    guid: 07b08ff259555e443b399e365e21d7da
   - enabled: 1
-    path: Assets/Scenes/MainGameScene.unity
-    guid: c4d5dc8a7ec661743939d636f9ba009f
+    path: Assets/Scenes/M01_BasicSuppression.unity
+    guid: 9bf150095fc980849ba76063eeb085cf
+  - enabled: 1
+    path: Assets/Scenes/M02_ForestContainment.unity
+    guid: 5379d6e7814ad0d499a6366bcda4e933
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: fba21fcc9d3c4ce4183d6d76aca6c7c0, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 3ca6bfd89f0a70544aa2a0d8a486c808, type: 2}
